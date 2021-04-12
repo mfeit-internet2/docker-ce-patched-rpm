@@ -1,0 +1,24 @@
+diff -rupN engine-orig/vendor/github.com/docker/libnetwork/ipam/allocator.go engine/vendor/github.com/docker/libnetwork/ipam/allocator.go
+--- engine-orig/vendor/github.com/docker/libnetwork/ipam/allocator.go	2021-03-02 20:13:48.000000000 +0000
++++ engine/vendor/github.com/docker/libnetwork/ipam/allocator.go	2021-03-11 20:22:36.000000000 +0000
+@@ -353,12 +353,15 @@ func (a *Allocator) insertBitMask(key Su
+ 		return err
+ 	}
+ 
+-	// Do not let network identifier address be reserved
+-	// Do the same for IPv6 so that bridge ip starts with XXXX...::1
+-	h.Set(0)
++	// Pre-reserve the network address on IPv4 networks large
++	// enough to have one (i.e., /31s and smaller).
++	if !(ipVer == v4 && numAddresses <= 2) {
++		h.Set(0)
++	}
+ 
+-	// Do not let broadcast address be reserved
+-	if ipVer == v4 {
++	// Pre-reserve the broadcast address on IPv4 networks large
++	// enough to have one (i.e., anything /31s and smaller).
++	if ipVer == v4 && numAddresses > 2 {
+ 		h.Set(numAddresses - 1)
+ 	}
+ 

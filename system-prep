@@ -1,0 +1,61 @@
+#!/bin/sh -e
+#
+# Prepare a CentOS 8 system for building Docker CE
+#
+
+
+if [ `id -u` -ne 0 ]
+then
+    echo "This must be run as root." 1>&2
+    exit 1
+fi
+
+
+TMPBASE="/tmp/work-$$"
+mkdir -p "${TMPBASE}"
+
+cleanup()
+{
+    rm -rf "${TMPBASE}"
+}
+trap cleanup EXIT
+
+
+# General prep
+
+dnf config-manager --enable powertools
+dnf config-manager --enable epel
+
+
+# Install OL8 kernel for BTRFS support.  Note that this repo can
+# sometimes be flaky.
+
+curl -s -o /etc/pki/rpm-gpg/RPM-GPG-KEY-oracle https://yum.oracle.com/RPM-GPG-KEY-oracle-ol8
+
+cat > /etc/yum.repos.d/uek-olx.repo <<EOF
+[ol8_UEKR6]
+name=Latest Unbreakable Enterprise Kernel Release 6 for Oracle Linux $releasever ($basearch)
+baseurl=https://yum.oracle.com/repo/OracleLinux/OL8/UEKR6/\$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+gpgcheck=1
+enabled=1
+EOF
+
+yum makecache
+
+
+# Install BTRFS developemnt files and correct a problem that causes
+# Docker to not build.
+
+yum -y install btrfs-progs-devel
+(cd /usr/include/btrfs && ln -s btrfs/* .)
+
+
+# Install pScheduler's RPM-building tools
+
+yum -y install git
+git -C "${TMPBASE}" clone https://github.com/perfsonar/pscheduler.git
+for PACKAGE in rpm-with-deps make-generic-rpm
+do
+    make -C "${TMPBASE}/pscheduler/${PACKAGE}" clean build install
+done
