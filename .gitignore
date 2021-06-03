@@ -1,0 +1,6 @@
+# Things to ignore
+
+docker-ce
+.vagrant
+*.rpm
+*~

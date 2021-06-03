@@ -53,7 +53,7 @@ yum -y install btrfs-progs-devel
 
 # Install pScheduler's RPM-building tools
 
-yum -y install git
+yum -y install git make
 git -C "${TMPBASE}" clone https://github.com/perfsonar/pscheduler.git
 for PACKAGE in rpm-with-deps make-generic-rpm
 do
